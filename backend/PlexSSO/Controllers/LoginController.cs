@@ -20,7 +20,6 @@ namespace PlexSSO.Controllers
         private readonly ILogger<LoginController> _logger;
         private readonly IPlexClient _plexClient;
         private readonly IAuthValidator _authValidator;
-        private readonly ServerIdentifier _serverIdentifier;
 
         public LoginController(ILogger<LoginController> logger,
                                IPlexClient plexClient,
@@ -29,7 +28,6 @@ namespace PlexSSO.Controllers
             _logger = logger;
             _plexClient = plexClient;
             _authValidator = authValidator;
-            _serverIdentifier = plexClient.GetPlexServerIdentifier();
         }
 
         [HttpPost]
@@ -39,14 +37,29 @@ namespace PlexSSO.Controllers
             try
             {
                 Identity.AccessToken = new AccessToken(data.Token);
-                Identity.ServerIdentifier = _serverIdentifier;
 
-                if (!Identity.IsAuthenticated)
+                // Hardcoded server identifiers
+                var primaryServerId = "90244d9a956da3afad32f85d6b24a9c24649d681";
+                var secondaryServerId = "c6448117a95874f18274f31495ff5118fd291089";
+
+                bool isAuthenticated = false;
+
+                // Check both server identifiers
+                var serverIdsToCheck = new[] { primaryServerId, secondaryServerId };
+                foreach (var serverId in serverIdsToCheck)
                 {
-                    Identity.AccessTier = await _plexClient.GetAccessTier(_serverIdentifier, Identity.AccessToken);
+                    var serverIdentifier = new ServerIdentifier(serverId);
+                    Identity.AccessTier = await _plexClient.GetAccessTier(serverIdentifier, Identity.AccessToken);
+
+                    if (Identity.AccessTier != AccessTier.NoAccess && Identity.AccessTier != AccessTier.Failure)
+                    {
+                        Identity.ServerIdentifier = serverIdentifier;
+                        isAuthenticated = true;
+                        break; // Exit loop once authenticated
+                    }
                 }
 
-                if (Identity.AccessTier == AccessTier.Failure)
+                if (!isAuthenticated)
                 {
                     Identity.AccessTier = AccessTier.NoAccess;
                     Identity.IsAuthenticated = false;
