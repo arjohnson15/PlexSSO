@@ -1,5 +1,8 @@
 # PlexSSO
 
+Added logic to handle multiple plex servers. these are hardcoded in the logincontroller at the moment and the config ID doesnt matter.
+
+
 ![Docker Publish Status](https://github.com/drkno/PlexSSOv2/workflows/Publish%20Docker%20image/badge.svg)
 
 An nginx `auth_request` Single Sign On service, using [Plex](https://plex.tv) as the upstream authorisation provider.
